@@ -1,13 +1,14 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine;
 using SnakeGame3D.InputSystem;
+using SnakeGame3D.FoodSystem;
 
 namespace SnakeGame3D.Snake
 {
     /// <summary>
     /// Master coordinator for the continuous 3D Snake.
-    /// Manages the head, path history, body segments, and directional inputs.
-    /// Listens to SwipeInput events and applies 180-degree reverse-turn protection.
+    /// Manages the head, path history, body segments, directional inputs, and snake growth.
+    /// Listens to SwipeInput events and Food.OnCollected events.
     /// </summary>
     public class SnakeController : MonoBehaviour
     {
@@ -16,6 +17,9 @@ namespace SnakeGame3D.Snake
         [SerializeField] private Transform _bodyContainer;
         [SerializeField] private List<SnakeSegment> _segments = new List<SnakeSegment>();
         [SerializeField] private SwipeInput _swipeInput;
+
+        [Header("Food Reference (Optional manual binding)")]
+        [SerializeField] private Food _targetFood;
 
         [Header("Movement & Turning Configuration")]
         [Tooltip("Forward movement speed in units per second")]
@@ -65,6 +69,16 @@ namespace SnakeGame3D.Snake
 
         public SnakeHead Head => _head;
         public IReadOnlyList<SnakeSegment> Segments => _segments;
+        public Food TargetFood
+        {
+            get => _targetFood;
+            set
+            {
+                if (_targetFood != null) _targetFood.OnCollected -= HandleFoodCollected;
+                _targetFood = value;
+                if (_targetFood != null && isActiveAndEnabled) _targetFood.OnCollected += HandleFoodCollected;
+            }
+        }
 
         private void Awake()
         {
@@ -80,6 +94,11 @@ namespace SnakeGame3D.Snake
                 _swipeInput = GetComponent<SwipeInput>() ?? GetComponentInChildren<SwipeInput>();
             }
 
+            if (_targetFood == null)
+            {
+                _targetFood = FindAnyObjectByType<Food>();
+            }
+
             // Auto-collect segments from body container if not assigned
             if (_segments.Count == 0 && _bodyContainer != null)
             {
@@ -93,6 +112,11 @@ namespace SnakeGame3D.Snake
             {
                 _swipeInput.OnDirectionRequested += OnDirectionInput;
             }
+
+            if (_targetFood != null)
+            {
+                _targetFood.OnCollected += HandleFoodCollected;
+            }
         }
 
         private void OnDisable()
@@ -100,6 +124,11 @@ namespace SnakeGame3D.Snake
             if (_swipeInput != null)
             {
                 _swipeInput.OnDirectionRequested -= OnDirectionInput;
+            }
+
+            if (_targetFood != null)
+            {
+                _targetFood.OnCollected -= HandleFoodCollected;
             }
         }
 
@@ -127,7 +156,7 @@ namespace SnakeGame3D.Snake
             _snakePath.Reset(_head.transform.position, _head.transform.rotation);
 
             // Seed path backward so body segments align smoothly on start
-            float totalLength = (_segments.Count + 1) * _segmentSpacing;
+            float totalLength = (_segments.Count + 2) * _segmentSpacing;
             Vector3 backwardDir = -_initialDirection.normalized;
             for (float d = 0.1f; d <= totalLength + 1f; d += 0.1f)
             {
@@ -148,12 +177,66 @@ namespace SnakeGame3D.Snake
                 _head.MoveHead(Time.deltaTime);
 
                 // Record head trajectory into SnakePath
-                float maxRequiredDistance = (_segments.Count + 1) * _segmentSpacing;
+                float maxRequiredDistance = (_segments.Count + 2) * _segmentSpacing;
                 _snakePath.UpdateHeadPosition(_head.transform.position, _head.transform.rotation, maxRequiredDistance);
 
                 // Update all body segments along the recorded path
                 UpdateBodyPositions();
             }
+        }
+
+        /// <summary>
+        /// Handles food collection event and triggers snake growth.
+        /// </summary>
+        private void HandleFoodCollected()
+        {
+            Grow();
+        }
+
+        /// <summary>
+        /// Adds a single new body segment to the snake.
+        /// </summary>
+        public void Grow()
+        {
+            SnakeSegment newSegment = CreateNewSegment();
+            if (newSegment != null)
+            {
+                _segments.Add(newSegment);
+                UpdateSegmentDistances();
+                // Immediately sample current path position for the new segment
+                newSegment.UpdatePositionFromPath(_snakePath);
+            }
+        }
+
+        /// <summary>
+        /// Creates and attaches a new visual segment that matches existing segments.
+        /// </summary>
+        private SnakeSegment CreateNewSegment()
+        {
+            GameObject segObj;
+            if (_segments.Count > 0 && _segments[_segments.Count - 1] != null)
+            {
+                // Clone the last segment to perfectly preserve visual components, mesh, material, and scales
+                segObj = Instantiate(_segments[_segments.Count - 1].gameObject, _bodyContainer != null ? _bodyContainer : transform);
+            }
+            else
+            {
+                // Fallback: create primitive capsule
+                segObj = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+                segObj.transform.SetParent(_bodyContainer != null ? _bodyContainer : transform);
+                segObj.transform.localScale = new Vector3(1.0f, 0.6f, 1.0f);
+            }
+
+            int index = _segments.Count + 1;
+            segObj.name = $"Segment_{index:D2}";
+
+            SnakeSegment seg = segObj.GetComponent<SnakeSegment>();
+            if (seg == null)
+            {
+                seg = segObj.AddComponent<SnakeSegment>();
+            }
+
+            return seg;
         }
 
         /// <summary>
@@ -179,19 +262,15 @@ namespace SnakeGame3D.Snake
             Vector3 normalizedDir = direction.normalized;
 
             // 180-degree reversal check:
-            // Compare against current facing direction and currently target direction.
-            // Dot product close to -1.0 means opposite direction (180 degrees).
             Vector3 currentDir = _head.CurrentDirection;
             Vector3 targetDir = _head.DesiredDirection;
 
             float dotCurrent = Vector3.Dot(currentDir, normalizedDir);
             float dotTarget = Vector3.Dot(targetDir, normalizedDir);
 
-            // If the snake has body segments, reverse direction is prohibited
             if (_segments.Count > 0 && (dotCurrent < -0.7f || dotTarget < -0.7f))
             {
-                // Illegal 180-degree reverse ignored
-                return;
+                return; // Illegal 180-degree reverse ignored
             }
 
             _head.SetDesiredDirection(normalizedDir);
@@ -220,3 +299,4 @@ namespace SnakeGame3D.Snake
         }
     }
 }
+
