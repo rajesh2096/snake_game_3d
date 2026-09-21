@@ -23,19 +23,19 @@ namespace SnakeGame3D.Snake
         [SerializeField] private Food _targetFood;
         [SerializeField] private GameOverManager _gameOverManager;
 
-        [Header("Movement & Speed Settings")]
-        [Tooltip("Constant forward speed in units/sec")]
+        [Header("Movement Configuration")]
+        [Tooltip("Forward movement speed in units per second")]
         [SerializeField] private float _movementSpeed = 3.0f;
 
-        [Tooltip("Turn rotation speed in degrees/sec")]
+        [Tooltip("Turn rotation speed in degrees per second")]
         [SerializeField] private float _turnSpeed = 180.0f;
 
-        [Header("Body Layout Settings")]
-        [Tooltip("Fixed physical distance between consecutive body segment centers")]
+        [Header("Body Configuration")]
+        [Tooltip("Distance in units between consecutive body segments")]
         [SerializeField] private float _segmentSpacing = 0.8f;
 
         [Header("Initial Spawn State")]
-        [SerializeField] private Vector3 _initialPosition = Vector3.zero;
+        [SerializeField] private Vector3 _initialPosition = new Vector3(0f, 0.5f, 0f);
         [SerializeField] private Vector3 _initialDirection = Vector3.forward;
 
         private SnakePath _snakePath;
@@ -64,21 +64,19 @@ namespace SnakeGame3D.Snake
             }
         }
 
-        public float SegmentSpacing => _segmentSpacing;
+        public float SegmentSpacing
+        {
+            get => _segmentSpacing;
+            set
+            {
+                _segmentSpacing = Mathf.Max(0.1f, value);
+                UpdateSegmentDistances();
+            }
+        }
+
         public SnakeHead Head => _head;
         public IReadOnlyList<SnakeSegment> Segments => _segments;
         public SnakePath Path => _snakePath;
-
-        public SwipeInput SwipeInput
-        {
-            get => _swipeInput;
-            set
-            {
-                if (_swipeInput != null) _swipeInput.OnDirectionRequested -= OnDirectionInput;
-                _swipeInput = value;
-                if (_swipeInput != null && isActiveAndEnabled) _swipeInput.OnDirectionRequested += OnDirectionInput;
-            }
-        }
 
         public Food TargetFood
         {
@@ -111,12 +109,31 @@ namespace SnakeGame3D.Snake
         {
             if (_snakePath == null)
             {
-                _snakePath = new SnakePath();
+                _snakePath = new SnakePath(0.04f);
             }
 
             if (_head == null)
             {
                 _head = GetComponentInChildren<SnakeHead>();
+            }
+
+            if (_bodyContainer == null)
+            {
+                Transform foundContainer = transform.Find("BodyContainer");
+                if (foundContainer != null)
+                {
+                    _bodyContainer = foundContainer;
+                }
+            }
+
+            if (_segments.Count == 0 && _bodyContainer != null)
+            {
+                _segments.AddRange(_bodyContainer.GetComponentsInChildren<SnakeSegment>());
+            }
+
+            if (_initialSegmentCount < 0)
+            {
+                _initialSegmentCount = _segments.Count;
             }
 
             if (_swipeInput == null)
@@ -133,26 +150,12 @@ namespace SnakeGame3D.Snake
             {
                 _gameOverManager = FindAnyObjectByType<GameOverManager>();
             }
-
-            if (_bodyContainer == null)
-            {
-                Transform bodyT = transform.Find("Body");
-                if (bodyT != null) _bodyContainer = bodyT;
-            }
-
-            if (_segments.Count == 0 && _bodyContainer != null)
-            {
-                _segments.AddRange(_bodyContainer.GetComponentsInChildren<SnakeSegment>());
-            }
-
-            if (_initialSegmentCount < 0)
-            {
-                _initialSegmentCount = _segments.Count;
-            }
         }
 
         private void OnEnable()
         {
+            EnsureInitialized();
+
             if (_swipeInput != null)
             {
                 _swipeInput.OnDirectionRequested -= OnDirectionInput;
@@ -197,7 +200,7 @@ namespace SnakeGame3D.Snake
 
         /// <summary>
         /// Resets the snake completely to its initial state:
-        /// restores initial position/direction, removes runtime growth segments, resets path history, and enables movement.
+        /// restores initial position/direction, removes runtime growth segments, resets path history, and snaps segments.
         /// </summary>
         public void ResetSnake()
         {
@@ -252,7 +255,7 @@ namespace SnakeGame3D.Snake
             // Seed path backward so body segments align smoothly on start
             float totalLength = (_segments.Count + 2) * _segmentSpacing;
             Vector3 backwardDir = -_initialDirection.normalized;
-            for (float d = 0.1f; d <= totalLength + 1f; d += 0.1f)
+            for (float d = 0.05f; d <= totalLength + 1f; d += 0.05f)
             {
                 Vector3 seedPos = _initialPosition + backwardDir * d;
                 _snakePath.UpdateHeadPosition(seedPos, Quaternion.LookRotation(_initialDirection, Vector3.up), totalLength + 5f);
@@ -260,7 +263,7 @@ namespace SnakeGame3D.Snake
             _snakePath.UpdateHeadPosition(_initialPosition, Quaternion.LookRotation(_initialDirection, Vector3.up), totalLength + 5f);
 
             UpdateSegmentDistances();
-            UpdateBodyPositions();
+            SnapAllSegmentsToPath();
         }
 
         private void Update()
@@ -336,8 +339,8 @@ namespace SnakeGame3D.Snake
             {
                 _segments.Add(newSegment);
                 UpdateSegmentDistances();
-                // Immediately sample current path position for the new segment
-                newSegment.UpdatePositionFromPath(_snakePath);
+                // Immediately snap to path position for the new segment
+                newSegment.SnapToPath(_snakePath);
             }
         }
 
@@ -432,6 +435,17 @@ namespace SnakeGame3D.Snake
                 if (_segments[i] != null)
                 {
                     _segments[i].UpdatePositionFromPath(_snakePath);
+                }
+            }
+        }
+
+        private void SnapAllSegmentsToPath()
+        {
+            for (int i = 0; i < _segments.Count; i++)
+            {
+                if (_segments[i] != null)
+                {
+                    _segments[i].SnapToPath(_snakePath);
                 }
             }
         }
