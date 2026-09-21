@@ -307,6 +307,7 @@ GameObject:
   m_Component:
   - component: {fileID: 60000002}
   - component: {fileID: 60000003}
+  - component: {fileID: 60000004}
   m_Layer: 0
   m_Name: Snake
   m_TagString: Untagged
@@ -361,6 +362,22 @@ MonoBehaviour:
   _segmentSpacing: 0.8
   _initialPosition: {x: 0, y: 0.5, z: 0}
   _initialDirection: {x: 0, y: 0, z: 1}
+--- !u!114 &60000004
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 60000001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4d71edc099d9432d99fcfc89637d518f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SnakeGame3D.Gameplay.SnakeSelfCollision
+  _snakeController: {fileID: 60000003}
+  _collisionThreshold: 0.65
+  _ignoredLeadingSegments: 2
+  _isSelfCollided: 0
 --- !u!1 &61000001
 GameObject:
   m_ObjectHideFlags: 0
