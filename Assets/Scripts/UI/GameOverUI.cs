@@ -1,13 +1,14 @@
-using TMPro;
+﻿using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 using SnakeGame3D.Game;
 
 namespace SnakeGame3D.UI
 {
     /// <summary>
-    /// Manages the Game Over UI panel.
-    /// Listens to GameOverManager.OnGameOver, queries the final score from ScoreManager,
-    /// and displays the Game Over panel.
+    /// Manages the Game Over UI panel and Restart Button.
+    /// Listens to GameOverManager.OnGameOver, queries final score from ScoreManager,
+    /// and invokes GameRestartManager.RestartGame() upon clicking the restart button.
     /// </summary>
     public class GameOverUI : MonoBehaviour
     {
@@ -18,6 +19,9 @@ namespace SnakeGame3D.UI
         [Tooltip("Reference to the ScoreManager")]
         [SerializeField] private ScoreManager _scoreManager;
 
+        [Tooltip("Reference to the GameRestartManager")]
+        [SerializeField] private GameRestartManager _gameRestartManager;
+
         [Header("UI Elements")]
         [Tooltip("Root panel GameObject for Game Over UI")]
         [SerializeField] private GameObject _gameOverPanel;
@@ -27,6 +31,9 @@ namespace SnakeGame3D.UI
 
         [Tooltip("Score text component")]
         [SerializeField] private TextMeshProUGUI _scoreText;
+
+        [Tooltip("Restart button component")]
+        [SerializeField] private Button _restartButton;
 
         [Header("Configuration")]
         [Tooltip("Score format string")]
@@ -49,6 +56,12 @@ namespace SnakeGame3D.UI
             set => _scoreManager = value;
         }
 
+        public GameRestartManager GameRestartManager
+        {
+            get => _gameRestartManager;
+            set => _gameRestartManager = value;
+        }
+
         public GameObject GameOverPanel
         {
             get => _gameOverPanel;
@@ -67,6 +80,17 @@ namespace SnakeGame3D.UI
             set => _scoreText = value;
         }
 
+        public Button RestartButton
+        {
+            get => _restartButton;
+            set
+            {
+                if (_restartButton != null) _restartButton.onClick.RemoveListener(OnRestartButtonClicked);
+                _restartButton = value;
+                if (_restartButton != null && isActiveAndEnabled) _restartButton.onClick.AddListener(OnRestartButtonClicked);
+            }
+        }
+
         private void Awake()
         {
             if (_gameOverManager == null)
@@ -77,6 +101,11 @@ namespace SnakeGame3D.UI
             if (_scoreManager == null)
             {
                 _scoreManager = FindAnyObjectByType<ScoreManager>();
+            }
+
+            if (_gameRestartManager == null)
+            {
+                _gameRestartManager = FindAnyObjectByType<GameRestartManager>();
             }
 
             // Ensure panel is initially hidden
@@ -96,6 +125,12 @@ namespace SnakeGame3D.UI
                     HandleGameOver();
                 }
             }
+
+            if (_restartButton != null)
+            {
+                _restartButton.onClick.RemoveListener(OnRestartButtonClicked);
+                _restartButton.onClick.AddListener(OnRestartButtonClicked);
+            }
         }
 
         private void OnDisable()
@@ -103,6 +138,11 @@ namespace SnakeGame3D.UI
             if (_gameOverManager != null)
             {
                 _gameOverManager.OnGameOver -= HandleGameOver;
+            }
+
+            if (_restartButton != null)
+            {
+                _restartButton.onClick.RemoveListener(OnRestartButtonClicked);
             }
         }
 
@@ -114,6 +154,21 @@ namespace SnakeGame3D.UI
             int currentScore = _scoreManager != null ? _scoreManager.CurrentScore : 0;
             UpdateScoreText(currentScore);
             ShowPanel();
+        }
+
+        /// <summary>
+        /// Callback when the Restart button is clicked.
+        /// </summary>
+        public void OnRestartButtonClicked()
+        {
+            if (_gameRestartManager != null)
+            {
+                _gameRestartManager.RestartGame();
+            }
+            else
+            {
+                Debug.LogWarning("[GameOverUI] GameRestartManager reference is missing!");
+            }
         }
 
         /// <summary>

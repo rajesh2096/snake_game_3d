@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using SnakeGame3D.InputSystem;
 using SnakeGame3D.FoodSystem;
@@ -39,6 +39,7 @@ namespace SnakeGame3D.Snake
 
         private SnakePath _snakePath;
         private bool _isMovementEnabled = true;
+        private int _initialSegmentCount = -1;
 
         public bool IsMovementEnabled => _isMovementEnabled;
 
@@ -99,7 +100,15 @@ namespace SnakeGame3D.Snake
 
         private void Awake()
         {
-            _snakePath = new SnakePath(minRecordDistance: 0.05f);
+            EnsureInitialized();
+        }
+
+        public void EnsureInitialized()
+        {
+            if (_snakePath == null)
+            {
+                _snakePath = new SnakePath(minRecordDistance: 0.05f);
+            }
 
             if (_head == null)
             {
@@ -125,6 +134,11 @@ namespace SnakeGame3D.Snake
             if (_segments.Count == 0 && _bodyContainer != null)
             {
                 _segments.AddRange(_bodyContainer.GetComponentsInChildren<SnakeSegment>());
+            }
+
+            if (_initialSegmentCount < 0)
+            {
+                _initialSegmentCount = _segments.Count;
             }
         }
 
@@ -172,8 +186,42 @@ namespace SnakeGame3D.Snake
             InitializeSnake();
         }
 
+        /// <summary>
+        /// Resets the snake completely to its initial state:
+        /// restores initial position/direction, removes runtime growth segments, resets path history, and enables movement.
+        /// </summary>
+        public void ResetSnake()
+        {
+            EnsureInitialized();
+
+            // 1. Remove extra segments grown at runtime
+            if (_initialSegmentCount >= 0 && _segments.Count > _initialSegmentCount)
+            {
+                int extraCount = _segments.Count - _initialSegmentCount;
+                for (int i = _segments.Count - 1; i >= _initialSegmentCount; i--)
+                {
+                    if (_segments[i] != null)
+                    {
+                        if (Application.isPlaying)
+                        {
+                            Destroy(_segments[i].gameObject);
+                        }
+                        else
+                        {
+                            DestroyImmediate(_segments[i].gameObject);
+                        }
+                    }
+                }
+                _segments.RemoveRange(_initialSegmentCount, extraCount);
+            }
+
+            InitializeSnake();
+        }
+
         public void InitializeSnake()
         {
+            EnsureInitialized();
+
             if (_head == null)
             {
                 Debug.LogWarning("[SnakeController] SnakeHead reference is missing!");
@@ -186,7 +234,7 @@ namespace SnakeGame3D.Snake
             _head.MoveSpeed = _movementSpeed;
             _head.TurnSpeed = _turnSpeed;
 
-            // Reset head position
+            // Reset head position and direction
             _head.ResetPosition(_initialPosition, _initialDirection);
 
             // Configure path history and seed initial trail
@@ -257,6 +305,7 @@ namespace SnakeGame3D.Snake
         /// </summary>
         public void Grow()
         {
+            EnsureInitialized();
             SnakeSegment newSegment = CreateNewSegment();
             if (newSegment != null)
             {
