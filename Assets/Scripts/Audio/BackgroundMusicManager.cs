@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using SnakeGame3D.Game;
 
 namespace SnakeGame3D.Audio
@@ -8,6 +8,7 @@ namespace SnakeGame3D.Audio
     /// Music starts on GameStartManager.OnGameStarted, pauses during Pause and resumes on Resume,
     /// and cleanly stops on Game Over and Restart.
     /// Handles missing audio clips safely without exceptions.
+    /// Supports dynamic music enabling and volume control via GameSettingsManager.
     /// </summary>
     public class BackgroundMusicManager : MonoBehaviour
     {
@@ -22,6 +23,7 @@ namespace SnakeGame3D.Audio
         [Range(0f, 1f)]
         [SerializeField] private float _musicVolume = 0.6f;
 
+        [SerializeField] private bool _musicEnabled = true;
         [SerializeField] private bool _loop = true;
 
         [Header("System References (Optional manual binding)")]
@@ -31,6 +33,24 @@ namespace SnakeGame3D.Audio
 
         public AudioSource MusicSource { get => _musicSource; set => _musicSource = value; }
         public AudioClip BackgroundMusicClip { get => _backgroundMusicClip; set => _backgroundMusicClip = value; }
+
+        public bool MusicEnabled
+        {
+            get => _musicEnabled;
+            set
+            {
+                _musicEnabled = value;
+                if (!_musicEnabled)
+                {
+                    StopMusic();
+                }
+                else if (_startManager != null && _startManager.IsGameStarted && (_pauseManager == null || !_pauseManager.IsPaused))
+                {
+                    PlayMusic();
+                }
+            }
+        }
+
         public float MusicVolume
         {
             get => _musicVolume;
@@ -43,6 +63,7 @@ namespace SnakeGame3D.Audio
                 }
             }
         }
+
         public bool Loop
         {
             get => _loop;
@@ -93,6 +114,31 @@ namespace SnakeGame3D.Audio
         {
             EnsureAudioSource();
             ResolveReferences();
+            LoadInitialSettings();
+        }
+
+        private void LoadInitialSettings()
+        {
+            if (GameSettingsManager.Instance != null)
+            {
+                _musicEnabled = GameSettingsManager.Instance.MusicEnabled;
+                _musicVolume = GameSettingsManager.Instance.MusicVolume;
+            }
+            else
+            {
+                _musicEnabled = PlayerPrefs.GetInt(GameSettingsManager.KeyMusicEnabled, 1) == 1;
+                _musicVolume = PlayerPrefs.GetFloat(GameSettingsManager.KeyMusicVolume, 0.6f);
+            }
+        }
+
+        public void SetMusicEnabled(bool enabled)
+        {
+            MusicEnabled = enabled;
+        }
+
+        public void SetMusicVolume(float volume)
+        {
+            MusicVolume = volume;
         }
 
         public void EnsureAudioSource()
@@ -153,7 +199,7 @@ namespace SnakeGame3D.Audio
         /// </summary>
         public void PlayMusic()
         {
-            if (_backgroundMusicClip == null)
+            if (!_musicEnabled || _backgroundMusicClip == null)
             {
                 return;
             }
@@ -183,7 +229,12 @@ namespace SnakeGame3D.Audio
         /// </summary>
         public void ResumeMusic()
         {
-            if (_musicSource != null && _backgroundMusicClip != null)
+            if (!_musicEnabled || _backgroundMusicClip == null)
+            {
+                return;
+            }
+
+            if (_musicSource != null)
             {
                 _musicSource.UnPause();
                 if (!_musicSource.isPlaying)

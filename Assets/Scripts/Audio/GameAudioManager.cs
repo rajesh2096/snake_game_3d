@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using SnakeGame3D.FoodSystem;
 using SnakeGame3D.Game;
 
@@ -8,6 +8,7 @@ namespace SnakeGame3D.Audio
     /// Central audio manager for game sound effects.
     /// Subscribes to Food.OnCollected, GameOverManager.OnGameOver, GameStartManager.OnGameStarted,
     /// and GamePauseManager.OnPauseStateChanged. Safely handles missing clips and audio sources without null errors.
+    /// Supports dynamic sound enabling and volume adjustment from GameSettingsManager.
     /// </summary>
     public class GameAudioManager : MonoBehaviour
     {
@@ -23,8 +24,9 @@ namespace SnakeGame3D.Audio
         [SerializeField] private AudioClip _pauseClip;
         [SerializeField] private AudioClip _resumeClip;
 
-        [Header("Volumes")]
+        [Header("Volumes & Settings")]
         [Range(0f, 1f)] [SerializeField] private float _sfxVolume = 1f;
+        [SerializeField] private bool _soundEnabled = true;
 
         [Header("System References (Optional manual binding)")]
         [SerializeField] private Food _food;
@@ -39,6 +41,25 @@ namespace SnakeGame3D.Audio
         public AudioClip ButtonClickClip { get => _buttonClickClip; set => _buttonClickClip = value; }
         public AudioClip PauseClip { get => _pauseClip; set => _pauseClip = value; }
         public AudioClip ResumeClip { get => _resumeClip; set => _resumeClip = value; }
+
+        public bool SoundEnabled
+        {
+            get => _soundEnabled;
+            set => _soundEnabled = value;
+        }
+
+        public float SoundVolume
+        {
+            get => _sfxVolume;
+            set
+            {
+                _sfxVolume = Mathf.Clamp01(value);
+                if (_sfxSource != null)
+                {
+                    _sfxSource.volume = _sfxVolume;
+                }
+            }
+        }
 
         public Food Food
         {
@@ -88,6 +109,35 @@ namespace SnakeGame3D.Audio
         {
             EnsureAudioSource();
             ResolveReferences();
+            LoadInitialSettings();
+        }
+
+        private void LoadInitialSettings()
+        {
+            if (GameSettingsManager.Instance != null)
+            {
+                _soundEnabled = GameSettingsManager.Instance.SoundEnabled;
+                _sfxVolume = GameSettingsManager.Instance.SoundVolume;
+            }
+            else
+            {
+                _soundEnabled = PlayerPrefs.GetInt(GameSettingsManager.KeySoundEnabled, 1) == 1;
+                _sfxVolume = PlayerPrefs.GetFloat(GameSettingsManager.KeySoundVolume, 1f);
+            }
+        }
+
+        public void SetSoundEnabled(bool enabled)
+        {
+            _soundEnabled = enabled;
+        }
+
+        public void SetSoundVolume(float volume)
+        {
+            _sfxVolume = Mathf.Clamp01(volume);
+            if (_sfxSource != null)
+            {
+                _sfxSource.volume = _sfxVolume;
+            }
         }
 
         public void EnsureAudioSource()
@@ -149,8 +199,18 @@ namespace SnakeGame3D.Audio
             if (_pauseManager != null) _pauseManager.OnPauseStateChanged -= HandlePauseStateChanged;
         }
 
-        private void HandleFoodCollected() => PlayFoodCollected();
-        private void HandleGameOver() => PlayGameOver();
+        private void HandleFoodCollected()
+        {
+            PlayFoodCollected();
+            GameHapticsManager.Vibrate();
+        }
+
+        private void HandleGameOver()
+        {
+            PlayGameOver();
+            GameHapticsManager.Vibrate();
+        }
+
         private void HandleGameStarted() => PlayGameStart();
         private void HandlePauseStateChanged(bool isPaused)
         {
@@ -161,13 +221,17 @@ namespace SnakeGame3D.Audio
         public void PlayFoodCollected() => PlayClip(_foodCollectedClip);
         public void PlayGameOver() => PlayClip(_gameOverClip);
         public void PlayGameStart() => PlayClip(_gameStartClip);
-        public void PlayButtonClick() => PlayClip(_buttonClickClip);
+        public void PlayButtonClick()
+        {
+            PlayClip(_buttonClickClip);
+            GameHapticsManager.Vibrate();
+        }
         public void PlayPause() => PlayClip(_pauseClip);
         public void PlayResume() => PlayClip(_resumeClip);
 
         public void PlayClip(AudioClip clip)
         {
-            if (clip == null) return;
+            if (!_soundEnabled || clip == null) return;
 
             EnsureAudioSource();
             if (_sfxSource != null)

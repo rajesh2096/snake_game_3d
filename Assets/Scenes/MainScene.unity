@@ -627,6 +627,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _targetDistanceBehindHead: 0.8
+  _rotationSmoothSpeed: 25
+  _positionSmoothSpeed: 30
 --- !u!1 &63100001
 GameObject:
   m_ObjectHideFlags: 0
@@ -731,6 +733,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _targetDistanceBehindHead: 1.6
+  _rotationSmoothSpeed: 25
+  _positionSmoothSpeed: 30
 --- !u!1 &63200001
 GameObject:
   m_ObjectHideFlags: 0
@@ -835,6 +839,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _targetDistanceBehindHead: 2.4
+  _rotationSmoothSpeed: 25
+  _positionSmoothSpeed: 30
 --- !u!1 &63300001
 GameObject:
   m_ObjectHideFlags: 0
@@ -939,6 +945,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _targetDistanceBehindHead: 3.2
+  _rotationSmoothSpeed: 25
+  _positionSmoothSpeed: 30
 --- !u!1 &63400001
 GameObject:
   m_ObjectHideFlags: 0
@@ -1043,6 +1051,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _targetDistanceBehindHead: 4
+  _rotationSmoothSpeed: 25
+  _positionSmoothSpeed: 30
 --- !u!1 &63500001
 GameObject:
   m_ObjectHideFlags: 0
@@ -1147,6 +1157,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _targetDistanceBehindHead: 4.8
+  _rotationSmoothSpeed: 25
+  _positionSmoothSpeed: 30
 --- !u!1 &63600001
 GameObject:
   m_ObjectHideFlags: 0
@@ -1251,6 +1263,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _targetDistanceBehindHead: 5.6
+  _rotationSmoothSpeed: 25
+  _positionSmoothSpeed: 30
 --- !u!1 &63700001
 GameObject:
   m_ObjectHideFlags: 0
@@ -1355,6 +1369,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _targetDistanceBehindHead: 6.4
+  _rotationSmoothSpeed: 25
+  _positionSmoothSpeed: 30
 --- !u!1 &72411176
 GameObject:
   m_ObjectHideFlags: 0
@@ -1941,6 +1957,7 @@ MonoBehaviour:
   _pauseClip: {fileID: 0}
   _resumeClip: {fileID: 0}
   _sfxVolume: 1
+  _soundEnabled: 1
   _food: {fileID: 80000006}
   _gameOverManager: {fileID: 1102638266}
   _startManager: {fileID: 766318339}
@@ -3696,6 +3713,7 @@ GameObject:
   - component: {fileID: 1607370848}
   - component: {fileID: 1607370853}
   - component: {fileID: 1607370854}
+  - component: {fileID: 1607370855}
   m_Layer: 0
   m_Name: Canvas
   m_TagString: Untagged
@@ -3846,6 +3864,25 @@ MonoBehaviour:
   _startPanel: {fileID: 1844819636}
   _startButton: {fileID: 551253719}
   _pauseButton: {fileID: 445325162}
+--- !u!114 &1607370855
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1607370847}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0a4a7efffa01ea24baf0a8b4e805215a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SnakeGame3D.Game.GameSettingsManager
+  _soundEnabled: 1
+  _musicEnabled: 1
+  _soundVolume: 1
+  _musicVolume: 0.6
+  _vibrationEnabled: 1
+  _audioManager: {fileID: 0}
+  _musicManager: {fileID: 0}
 --- !u!1 &1655620479
 GameObject:
   m_ObjectHideFlags: 0
@@ -4346,6 +4383,7 @@ MonoBehaviour:
   _musicSource: {fileID: 1791137896}
   _backgroundMusicClip: {fileID: 0}
   _musicVolume: 0.6
+  _musicEnabled: 1
   _loop: 1
   _startManager: {fileID: 766318339}
   _pauseManager: {fileID: 1746058182}
