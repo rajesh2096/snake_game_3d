@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using UnityEngine;
 using SnakeGame3D.Snake;
 
@@ -16,6 +16,7 @@ namespace SnakeGame3D.FoodSystem
         [SerializeField] private float _groundYOffset = 0.4f;
 
         private bool _isCollected;
+        private FoodVisualEffect _visualEffect;
 
         /// <summary>
         /// Event fired when the food item is collected by the snake head.
@@ -33,6 +34,8 @@ namespace SnakeGame3D.FoodSystem
             {
                 col.isTrigger = true;
             }
+
+            _visualEffect = GetComponent<FoodVisualEffect>();
         }
 
         /// <summary>
@@ -44,6 +47,11 @@ namespace SnakeGame3D.FoodSystem
             position.y = _groundYOffset;
             transform.position = position;
             _isCollected = false;
+
+            if (_visualEffect != null)
+            {
+                _visualEffect.ResetVisualState();
+            }
         }
 
         /// <summary>
@@ -51,16 +59,19 @@ namespace SnakeGame3D.FoodSystem
         /// </summary>
         public void SetPosition(float x, float z)
         {
-            transform.position = new Vector3(x, _groundYOffset, z);
-            _isCollected = false;
+            SetPosition(new Vector3(x, _groundYOffset, z));
         }
 
         /// <summary>
-        /// Resets the collection flag manually if needed.
+        /// Resets the collection flag manually if needed and restores visual state.
         /// </summary>
         public void ResetFood()
         {
             _isCollected = false;
+            if (_visualEffect != null)
+            {
+                _visualEffect.ResetVisualState();
+            }
         }
 
         private void OnTriggerEnter(Collider other)
