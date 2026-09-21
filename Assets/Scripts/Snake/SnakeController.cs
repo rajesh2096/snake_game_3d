@@ -1,11 +1,13 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
+using SnakeGame3D.InputSystem;
 
 namespace SnakeGame3D.Snake
 {
     /// <summary>
     /// Master coordinator for the continuous 3D Snake.
     /// Manages the head, path history, body segments, and directional inputs.
+    /// Listens to SwipeInput events and applies 180-degree reverse-turn protection.
     /// </summary>
     public class SnakeController : MonoBehaviour
     {
@@ -13,6 +15,7 @@ namespace SnakeGame3D.Snake
         [SerializeField] private SnakeHead _head;
         [SerializeField] private Transform _bodyContainer;
         [SerializeField] private List<SnakeSegment> _segments = new List<SnakeSegment>();
+        [SerializeField] private SwipeInput _swipeInput;
 
         [Header("Movement & Turning Configuration")]
         [Tooltip("Forward movement speed in units per second")]
@@ -72,10 +75,31 @@ namespace SnakeGame3D.Snake
                 _head = GetComponentInChildren<SnakeHead>();
             }
 
+            if (_swipeInput == null)
+            {
+                _swipeInput = GetComponent<SwipeInput>() ?? GetComponentInChildren<SwipeInput>();
+            }
+
             // Auto-collect segments from body container if not assigned
             if (_segments.Count == 0 && _bodyContainer != null)
             {
                 _segments.AddRange(_bodyContainer.GetComponentsInChildren<SnakeSegment>());
+            }
+        }
+
+        private void OnEnable()
+        {
+            if (_swipeInput != null)
+            {
+                _swipeInput.OnDirectionRequested += OnDirectionInput;
+            }
+        }
+
+        private void OnDisable()
+        {
+            if (_swipeInput != null)
+            {
+                _swipeInput.OnDirectionRequested -= OnDirectionInput;
             }
         }
 
@@ -118,33 +142,59 @@ namespace SnakeGame3D.Snake
 
         private void Update()
         {
-            // 1. Temporary keyboard input for movement validation (W/A/S/D or Arrow keys)
-            HandleTestingInput();
-
-            // 2. Advance head forward and turn
+            // Advance head forward and turn
             if (_head != null)
             {
                 _head.MoveHead(Time.deltaTime);
 
-                // 3. Record head trajectory into SnakePath
+                // Record head trajectory into SnakePath
                 float maxRequiredDistance = (_segments.Count + 1) * _segmentSpacing;
                 _snakePath.UpdateHeadPosition(_head.transform.position, _head.transform.rotation, maxRequiredDistance);
 
-                // 4. Update all body segments along the recorded path
+                // Update all body segments along the recorded path
                 UpdateBodyPositions();
             }
         }
 
         /// <summary>
+        /// Callback when a direction is requested via swipe or keyboard.
+        /// Validates against 180-degree direct reverse before setting.
+        /// </summary>
+        private void OnDirectionInput(Vector3 requestedDirection)
+        {
+            SetDirection(requestedDirection);
+        }
+
+        /// <summary>
         /// Public API to set desired horizontal snake movement direction.
-        /// Touch/swipe controllers can call this directly.
+        /// Respects 180-degree reverse-direction protection.
         /// </summary>
         public void SetDirection(Vector3 direction)
         {
-            if (_head != null)
+            if (_head == null) return;
+
+            direction.y = 0f;
+            if (direction.sqrMagnitude < 0.001f) return;
+
+            Vector3 normalizedDir = direction.normalized;
+
+            // 180-degree reversal check:
+            // Compare against current facing direction and currently target direction.
+            // Dot product close to -1.0 means opposite direction (180 degrees).
+            Vector3 currentDir = _head.CurrentDirection;
+            Vector3 targetDir = _head.DesiredDirection;
+
+            float dotCurrent = Vector3.Dot(currentDir, normalizedDir);
+            float dotTarget = Vector3.Dot(targetDir, normalizedDir);
+
+            // If the snake has body segments, reverse direction is prohibited
+            if (_segments.Count > 0 && (dotCurrent < -0.7f || dotTarget < -0.7f))
             {
-                _head.SetDesiredDirection(direction);
+                // Illegal 180-degree reverse ignored
+                return;
             }
+
+            _head.SetDesiredDirection(normalizedDir);
         }
 
         private void UpdateSegmentDistances()
@@ -166,36 +216,6 @@ namespace SnakeGame3D.Snake
                 {
                     _segments[i].UpdatePositionFromPath(_snakePath);
                 }
-            }
-        }
-
-        /// <summary>
-        /// Lightweight temporary input mapping for testing movement & turning in Editor.
-        /// </summary>
-        private void HandleTestingInput()
-        {
-            Vector3 inputDir = Vector3.zero;
-
-            if (Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.UpArrow))
-            {
-                inputDir += Vector3.forward;
-            }
-            if (Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.DownArrow))
-            {
-                inputDir += Vector3.back;
-            }
-            if (Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.LeftArrow))
-            {
-                inputDir += Vector3.left;
-            }
-            if (Input.GetKey(KeyCode.D) || Input.GetKey(KeyCode.RightArrow))
-            {
-                inputDir += Vector3.right;
-            }
-
-            if (inputDir.sqrMagnitude > 0.001f)
-            {
-                SetDirection(inputDir.normalized);
             }
         }
     }
