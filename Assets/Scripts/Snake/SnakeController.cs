@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine;
 using SnakeGame3D.InputSystem;
 using SnakeGame3D.FoodSystem;
@@ -23,18 +23,19 @@ namespace SnakeGame3D.Snake
         [SerializeField] private Food _targetFood;
         [SerializeField] private GameOverManager _gameOverManager;
 
-        [Header("Movement & Turning Configuration")]
-        [Tooltip("Forward movement speed in units per second")]
+        [Header("Movement & Speed Settings")]
+        [Tooltip("Constant forward speed in units/sec")]
         [SerializeField] private float _movementSpeed = 3.0f;
 
-        [Tooltip("Turn speed in degrees per second")]
+        [Tooltip("Turn rotation speed in degrees/sec")]
         [SerializeField] private float _turnSpeed = 180.0f;
 
-        [Tooltip("Spacing between adjacent segments in world units")]
+        [Header("Body Layout Settings")]
+        [Tooltip("Fixed physical distance between consecutive body segment centers")]
         [SerializeField] private float _segmentSpacing = 0.8f;
 
-        [Header("Initial Setup")]
-        [SerializeField] private Vector3 _initialPosition = new Vector3(0f, 0.5f, 0f);
+        [Header("Initial Spawn State")]
+        [SerializeField] private Vector3 _initialPosition = Vector3.zero;
         [SerializeField] private Vector3 _initialDirection = Vector3.forward;
 
         private SnakePath _snakePath;
@@ -63,18 +64,21 @@ namespace SnakeGame3D.Snake
             }
         }
 
-        public float SegmentSpacing
-        {
-            get => _segmentSpacing;
-            set
-            {
-                _segmentSpacing = Mathf.Max(0.1f, value);
-                UpdateSegmentDistances();
-            }
-        }
-
+        public float SegmentSpacing => _segmentSpacing;
         public SnakeHead Head => _head;
         public IReadOnlyList<SnakeSegment> Segments => _segments;
+        public SnakePath Path => _snakePath;
+
+        public SwipeInput SwipeInput
+        {
+            get => _swipeInput;
+            set
+            {
+                if (_swipeInput != null) _swipeInput.OnDirectionRequested -= OnDirectionInput;
+                _swipeInput = value;
+                if (_swipeInput != null && isActiveAndEnabled) _swipeInput.OnDirectionRequested += OnDirectionInput;
+            }
+        }
 
         public Food TargetFood
         {
@@ -107,7 +111,7 @@ namespace SnakeGame3D.Snake
         {
             if (_snakePath == null)
             {
-                _snakePath = new SnakePath(minRecordDistance: 0.05f);
+                _snakePath = new SnakePath();
             }
 
             if (_head == null)
@@ -117,7 +121,7 @@ namespace SnakeGame3D.Snake
 
             if (_swipeInput == null)
             {
-                _swipeInput = GetComponent<SwipeInput>() ?? GetComponentInChildren<SwipeInput>();
+                _swipeInput = FindAnyObjectByType<SwipeInput>();
             }
 
             if (_targetFood == null)
@@ -130,7 +134,12 @@ namespace SnakeGame3D.Snake
                 _gameOverManager = FindAnyObjectByType<GameOverManager>();
             }
 
-            // Auto-collect segments from body container if not assigned
+            if (_bodyContainer == null)
+            {
+                Transform bodyT = transform.Find("Body");
+                if (bodyT != null) _bodyContainer = bodyT;
+            }
+
             if (_segments.Count == 0 && _bodyContainer != null)
             {
                 _segments.AddRange(_bodyContainer.GetComponentsInChildren<SnakeSegment>());
@@ -284,11 +293,27 @@ namespace SnakeGame3D.Snake
         }
 
         /// <summary>
+        /// Starts or resumes snake forward translation and turning.
+        /// </summary>
+        public void StartMovement()
+        {
+            _isMovementEnabled = true;
+        }
+
+        /// <summary>
         /// Stops snake forward translation and turning.
         /// </summary>
         public void StopMovement()
         {
             _isMovementEnabled = false;
+        }
+
+        /// <summary>
+        /// Explicitly sets the movement enabled state.
+        /// </summary>
+        public void SetMovementEnabled(bool enabled)
+        {
+            _isMovementEnabled = enabled;
         }
 
         /// <summary>

@@ -17,6 +17,9 @@ namespace SnakeGame3D.UI
         [Tooltip("Reference to GameOverManager")]
         [SerializeField] private GameOverManager _gameOverManager;
 
+        [Tooltip("Reference to GameStartManager")]
+        [SerializeField] private GameStartManager _startManager;
+
         [Header("UI Elements")]
         [Tooltip("Pause button (usually top-right HUD)")]
         [SerializeField] private Button _pauseButton;
@@ -59,6 +62,12 @@ namespace SnakeGame3D.UI
                     _gameOverManager.OnGameOver += HandleGameOver;
                 }
             }
+        }
+
+        public GameStartManager StartManager
+        {
+            get => _startManager;
+            set => _startManager = value;
         }
 
         public Button PauseButton
@@ -105,6 +114,11 @@ namespace SnakeGame3D.UI
             if (_gameOverManager == null)
             {
                 _gameOverManager = FindAnyObjectByType<GameOverManager>();
+            }
+
+            if (_startManager == null)
+            {
+                _startManager = FindAnyObjectByType<GameStartManager>();
             }
         }
 
@@ -187,13 +201,14 @@ namespace SnakeGame3D.UI
         }
 
         /// <summary>
-        /// Updates visibility of PauseButton and PausePanel based on current pause and game-over state.
+        /// Updates visibility of PauseButton and PausePanel based on current pause, game-over, and start state.
         /// </summary>
         public void UpdateUIState(bool isPaused)
         {
             bool isGameOver = _gameOverManager != null && _gameOverManager.IsGameOver;
+            bool isStarted = _startManager == null || _startManager.IsGameStarted;
 
-            if (isGameOver)
+            if (isGameOver || !isStarted)
             {
                 if (_pauseButton != null) _pauseButton.gameObject.SetActive(false);
                 if (_pausePanel != null) _pausePanel.SetActive(false);
