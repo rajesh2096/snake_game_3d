@@ -372,6 +372,8 @@ GameObject:
   - component: {fileID: 61000003}
   - component: {fileID: 61000004}
   - component: {fileID: 61000005}
+  - component: {fileID: 61000006}
+  - component: {fileID: 61000007}
   m_Layer: 0
   m_Name: Head
   m_TagString: Untagged
@@ -1689,7 +1691,7 @@ SphereCollider:
     serializedVersion: 2
     m_Bits: 0
   m_LayerOverridePriority: 0
-  m_IsTrigger: 0
+  m_IsTrigger: 1
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
@@ -1716,5 +1718,6 @@ SceneRoots:
   - {fileID: 50000002}
   - {fileID: 705507995}
   - {fileID: 963194228}
+
 
 
