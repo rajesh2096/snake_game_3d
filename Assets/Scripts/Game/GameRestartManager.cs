@@ -3,12 +3,13 @@ using SnakeGame3D.Snake;
 using SnakeGame3D.Gameplay;
 using SnakeGame3D.FoodSystem;
 using SnakeGame3D.UI;
+using SnakeGame3D.Audio;
 
 namespace SnakeGame3D.Game
 {
     /// <summary>
     /// Coordinates the restart flow for the 3D Snake Game.
-    /// Resets GameOverManager, GamePauseManager, GameStartManager, ScoreManager, SnakeController, ArenaBoundary, SnakeSelfCollision, Food, FoodSpawner, GameOverUI, PauseUI, and GameStartUI
+    /// Resets GameOverManager, GamePauseManager, GameStartManager, ScoreManager, SnakeController, ArenaBoundary, SnakeSelfCollision, Food, FoodSpawner, GameOverUI, PauseUI, GameStartUI, and BackgroundMusicManager
     /// in a deterministic sequence without reloading the scene.
     /// </summary>
     public class GameRestartManager : MonoBehaviour
@@ -50,6 +51,9 @@ namespace SnakeGame3D.Game
         [Tooltip("Reference to GameStartUI")]
         [SerializeField] private GameStartUI _startUI;
 
+        [Tooltip("Reference to BackgroundMusicManager")]
+        [SerializeField] private BackgroundMusicManager _musicManager;
+
         public GameOverManager GameOverManager { get => _gameOverManager; set => _gameOverManager = value; }
         public GamePauseManager PauseManager { get => _pauseManager; set => _pauseManager = value; }
         public GameStartManager StartManager { get => _startManager; set => _startManager = value; }
@@ -62,6 +66,7 @@ namespace SnakeGame3D.Game
         public GameOverUI GameOverUI { get => _gameOverUI; set => _gameOverUI = value; }
         public PauseUI PauseUI { get => _pauseUI; set => _pauseUI = value; }
         public GameStartUI StartUI { get => _startUI; set => _startUI = value; }
+        public BackgroundMusicManager MusicManager { get => _musicManager; set => _musicManager = value; }
 
         private void Awake()
         {
@@ -85,6 +90,7 @@ namespace SnakeGame3D.Game
             if (_gameOverUI == null) _gameOverUI = FindAnyObjectByType<GameOverUI>();
             if (_pauseUI == null) _pauseUI = FindAnyObjectByType<PauseUI>();
             if (_startUI == null) _startUI = FindAnyObjectByType<GameStartUI>();
+            if (_musicManager == null) _musicManager = FindAnyObjectByType<BackgroundMusicManager>();
         }
 
         /// <summary>
@@ -92,12 +98,13 @@ namespace SnakeGame3D.Game
         /// 1. Resets GameOverManager state
         /// 2. Resets GamePauseManager (resumes if paused, timeScale = 1)
         /// 3. Resets GameStartManager (resets back to READY, movement disabled)
-        /// 4. Resets ScoreManager (score back to 0)
-        /// 5. Resets SnakeController (removes growth segments, resets position/direction/path, movement stopped)
-        /// 6. Resets ArenaBoundary state
-        /// 7. Resets SnakeSelfCollision state
-        /// 8. Resets Food and FoodSpawner state
-        /// 9. Hides Game Over UI panel, updates Pause UI & shows Start/Ready UI
+        /// 4. Stops Background Music (game returns to READY)
+        /// 5. Resets ScoreManager (score back to 0)
+        /// 6. Resets SnakeController (removes growth segments, resets position/direction/path, movement stopped)
+        /// 7. Resets ArenaBoundary state
+        /// 8. Resets SnakeSelfCollision state
+        /// 9. Resets Food and FoodSpawner state
+        /// 10. Hides Game Over UI panel, updates Pause UI & shows Start/Ready UI
         /// </summary>
         public void RestartGame()
         {
@@ -122,32 +129,38 @@ namespace SnakeGame3D.Game
                 _startManager.ResetStartState();
             }
 
-            // 4. Reset Score Manager
+            // 4. Reset Background Music (returns to OFF until Start Game)
+            if (_musicManager != null)
+            {
+                _musicManager.StopMusic();
+            }
+
+            // 5. Reset Score Manager
             if (_scoreManager != null)
             {
                 _scoreManager.ResetScore();
             }
 
-            // 5. Reset Snake Controller & ensure movement stopped for READY state
+            // 6. Reset Snake Controller & ensure movement stopped for READY state
             if (_snakeController != null)
             {
                 _snakeController.ResetSnake();
                 _snakeController.StopMovement();
             }
 
-            // 6. Reset Arena Boundary
+            // 7. Reset Arena Boundary
             if (_arenaBoundary != null)
             {
                 _arenaBoundary.ResetBoundaryState();
             }
 
-            // 7. Reset Self Collision
+            // 8. Reset Self Collision
             if (_selfCollision != null)
             {
                 _selfCollision.ResetCollisionState();
             }
 
-            // 8. Reset Food & FoodSpawner
+            // 9. Reset Food & FoodSpawner
             if (_foodSpawner != null)
             {
                 _foodSpawner.RespawnFood();
@@ -157,7 +170,7 @@ namespace SnakeGame3D.Game
                 _food.ResetFood();
             }
 
-            // 9. Update UI panels
+            // 10. Update UI panels
             if (_gameOverUI != null)
             {
                 _gameOverUI.HidePanel();
