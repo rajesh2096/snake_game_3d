@@ -2,13 +2,14 @@ using System.Collections.Generic;
 using UnityEngine;
 using SnakeGame3D.InputSystem;
 using SnakeGame3D.FoodSystem;
+using SnakeGame3D.Game;
 
 namespace SnakeGame3D.Snake
 {
     /// <summary>
     /// Master coordinator for the continuous 3D Snake.
     /// Manages the head, path history, body segments, directional inputs, and snake growth.
-    /// Listens to SwipeInput events and Food.OnCollected events.
+    /// Listens to SwipeInput events, Food.OnCollected events, and GameOverManager.OnGameOver events.
     /// </summary>
     public class SnakeController : MonoBehaviour
     {
@@ -18,8 +19,9 @@ namespace SnakeGame3D.Snake
         [SerializeField] private List<SnakeSegment> _segments = new List<SnakeSegment>();
         [SerializeField] private SwipeInput _swipeInput;
 
-        [Header("Food Reference (Optional manual binding)")]
+        [Header("Game Reference (Optional manual binding)")]
         [SerializeField] private Food _targetFood;
+        [SerializeField] private GameOverManager _gameOverManager;
 
         [Header("Movement & Turning Configuration")]
         [Tooltip("Forward movement speed in units per second")]
@@ -36,6 +38,9 @@ namespace SnakeGame3D.Snake
         [SerializeField] private Vector3 _initialDirection = Vector3.forward;
 
         private SnakePath _snakePath;
+        private bool _isMovementEnabled = true;
+
+        public bool IsMovementEnabled => _isMovementEnabled;
 
         public float MovementSpeed
         {
@@ -69,6 +74,7 @@ namespace SnakeGame3D.Snake
 
         public SnakeHead Head => _head;
         public IReadOnlyList<SnakeSegment> Segments => _segments;
+
         public Food TargetFood
         {
             get => _targetFood;
@@ -77,6 +83,17 @@ namespace SnakeGame3D.Snake
                 if (_targetFood != null) _targetFood.OnCollected -= HandleFoodCollected;
                 _targetFood = value;
                 if (_targetFood != null && isActiveAndEnabled) _targetFood.OnCollected += HandleFoodCollected;
+            }
+        }
+
+        public GameOverManager GameOverManager
+        {
+            get => _gameOverManager;
+            set
+            {
+                if (_gameOverManager != null) _gameOverManager.OnGameOver -= HandleGameOver;
+                _gameOverManager = value;
+                if (_gameOverManager != null && isActiveAndEnabled) _gameOverManager.OnGameOver += HandleGameOver;
             }
         }
 
@@ -99,6 +116,11 @@ namespace SnakeGame3D.Snake
                 _targetFood = FindAnyObjectByType<Food>();
             }
 
+            if (_gameOverManager == null)
+            {
+                _gameOverManager = FindAnyObjectByType<GameOverManager>();
+            }
+
             // Auto-collect segments from body container if not assigned
             if (_segments.Count == 0 && _bodyContainer != null)
             {
@@ -110,12 +132,20 @@ namespace SnakeGame3D.Snake
         {
             if (_swipeInput != null)
             {
+                _swipeInput.OnDirectionRequested -= OnDirectionInput;
                 _swipeInput.OnDirectionRequested += OnDirectionInput;
             }
 
             if (_targetFood != null)
             {
+                _targetFood.OnCollected -= HandleFoodCollected;
                 _targetFood.OnCollected += HandleFoodCollected;
+            }
+
+            if (_gameOverManager != null)
+            {
+                _gameOverManager.OnGameOver -= HandleGameOver;
+                _gameOverManager.OnGameOver += HandleGameOver;
             }
         }
 
@@ -129,6 +159,11 @@ namespace SnakeGame3D.Snake
             if (_targetFood != null)
             {
                 _targetFood.OnCollected -= HandleFoodCollected;
+            }
+
+            if (_gameOverManager != null)
+            {
+                _gameOverManager.OnGameOver -= HandleGameOver;
             }
         }
 
@@ -144,6 +179,8 @@ namespace SnakeGame3D.Snake
                 Debug.LogWarning("[SnakeController] SnakeHead reference is missing!");
                 return;
             }
+
+            _isMovementEnabled = true;
 
             // Apply speed settings
             _head.MoveSpeed = _movementSpeed;
@@ -171,6 +208,11 @@ namespace SnakeGame3D.Snake
 
         private void Update()
         {
+            if (!_isMovementEnabled)
+            {
+                return;
+            }
+
             // Advance head forward and turn
             if (_head != null)
             {
@@ -186,10 +228,27 @@ namespace SnakeGame3D.Snake
         }
 
         /// <summary>
+        /// Handles game over event by disabling snake movement.
+        /// </summary>
+        private void HandleGameOver()
+        {
+            StopMovement();
+        }
+
+        /// <summary>
+        /// Stops snake forward translation and turning.
+        /// </summary>
+        public void StopMovement()
+        {
+            _isMovementEnabled = false;
+        }
+
+        /// <summary>
         /// Handles food collection event and triggers snake growth.
         /// </summary>
         private void HandleFoodCollected()
         {
+            if (!_isMovementEnabled) return;
             Grow();
         }
 
@@ -245,6 +304,11 @@ namespace SnakeGame3D.Snake
         /// </summary>
         private void OnDirectionInput(Vector3 requestedDirection)
         {
+            if (!_isMovementEnabled)
+            {
+                return;
+            }
+
             SetDirection(requestedDirection);
         }
 
@@ -254,7 +318,7 @@ namespace SnakeGame3D.Snake
         /// </summary>
         public void SetDirection(Vector3 direction)
         {
-            if (_head == null) return;
+            if (_head == null || !_isMovementEnabled) return;
 
             direction.y = 0f;
             if (direction.sqrMagnitude < 0.001f) return;
@@ -299,4 +363,3 @@ namespace SnakeGame3D.Snake
         }
     }
 }
-
