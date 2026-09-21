@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using SnakeGame3D.Snake;
 using SnakeGame3D.Gameplay;
 using SnakeGame3D.FoodSystem;
@@ -8,7 +8,7 @@ namespace SnakeGame3D.Game
 {
     /// <summary>
     /// Coordinates the restart flow for the 3D Snake Game.
-    /// Resets GameOverManager, ScoreManager, SnakeController, ArenaBoundary, SnakeSelfCollision, Food, and GameOverUI
+    /// Resets GameOverManager, ScoreManager, SnakeController, ArenaBoundary, SnakeSelfCollision, Food, FoodSpawner, and GameOverUI
     /// in a deterministic sequence without reloading the scene.
     /// </summary>
     public class GameRestartManager : MonoBehaviour
@@ -32,6 +32,9 @@ namespace SnakeGame3D.Game
         [Tooltip("Reference to Food object")]
         [SerializeField] private Food _food;
 
+        [Tooltip("Reference to FoodSpawner")]
+        [SerializeField] private FoodSpawner _foodSpawner;
+
         [Tooltip("Reference to GameOverUI")]
         [SerializeField] private GameOverUI _gameOverUI;
 
@@ -41,6 +44,7 @@ namespace SnakeGame3D.Game
         public ArenaBoundary ArenaBoundary { get => _arenaBoundary; set => _arenaBoundary = value; }
         public SnakeSelfCollision SelfCollision { get => _selfCollision; set => _selfCollision = value; }
         public Food Food { get => _food; set => _food = value; }
+        public FoodSpawner FoodSpawner { get => _foodSpawner; set => _foodSpawner = value; }
         public GameOverUI GameOverUI { get => _gameOverUI; set => _gameOverUI = value; }
 
         private void Awake()
@@ -59,6 +63,7 @@ namespace SnakeGame3D.Game
             if (_arenaBoundary == null) _arenaBoundary = FindAnyObjectByType<ArenaBoundary>();
             if (_selfCollision == null) _selfCollision = FindAnyObjectByType<SnakeSelfCollision>();
             if (_food == null) _food = FindAnyObjectByType<Food>();
+            if (_foodSpawner == null) _foodSpawner = FindAnyObjectByType<FoodSpawner>();
             if (_gameOverUI == null) _gameOverUI = FindAnyObjectByType<GameOverUI>();
         }
 
@@ -69,7 +74,7 @@ namespace SnakeGame3D.Game
         /// 3. Resets SnakeController (removes growth segments, resets position/direction/path, enables movement)
         /// 4. Resets ArenaBoundary state
         /// 5. Resets SnakeSelfCollision state
-        /// 6. Resets Food state if available
+        /// 6. Resets Food and FoodSpawner state
         /// 7. Hides Game Over UI panel
         /// </summary>
         public void RestartGame()
@@ -106,8 +111,12 @@ namespace SnakeGame3D.Game
                 _selfCollision.ResetCollisionState();
             }
 
-            // 6. Reset Food
-            if (_food != null)
+            // 6. Reset Food & FoodSpawner
+            if (_foodSpawner != null)
+            {
+                _foodSpawner.RespawnFood();
+            }
+            else if (_food != null)
             {
                 _food.ResetFood();
             }

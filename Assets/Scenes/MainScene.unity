@@ -1481,6 +1481,57 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _groundYOffset: 0.4
+--- !u!1 &121946367
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 121946369}
+  - component: {fileID: 121946368}
+  m_Layer: 0
+  m_Name: FoodSpawner
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &121946368
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 121946367}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a3a8cffbcdbffa64c80f3d297441dc5c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SnakeGame3D.FoodSystem.FoodSpawner
+  _food: {fileID: 80000006}
+  _snakeController: {fileID: 60000003}
+  _arenaBoundary: {fileID: 1687292197}
+  _spawnMargin: 5
+  _minimumSnakeDistance: 2
+  _maxSpawnAttempts: 50
+  _spawnHeight: 0.4
+--- !u!4 &121946369
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 121946367}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &134672377
 GameObject:
   m_ObjectHideFlags: 0
@@ -2945,6 +2996,7 @@ MonoBehaviour:
   _arenaBoundary: {fileID: 1687292197}
   _selfCollision: {fileID: 60000004}
   _food: {fileID: 80000006}
+  _foodSpawner: {fileID: 121946368}
   _gameOverUI: {fileID: 1607370848}
 --- !u!4 &1750284848
 Transform:
@@ -2975,3 +3027,4 @@ SceneRoots:
   - {fileID: 1655620482}
   - {fileID: 1607370852}
   - {fileID: 1750284848}
+  - {fileID: 121946369}
