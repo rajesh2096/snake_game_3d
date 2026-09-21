@@ -1,4 +1,4 @@
-%YAML 1.1
+﻿%YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
 --- !u!29 &1
 OcclusionCullingSettings:
@@ -1474,6 +1474,7 @@ GameObject:
   - component: {fileID: 963194227}
   - component: {fileID: 963194226}
   - component: {fileID: 963194229}
+  - component: {fileID: 963194230}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -1599,6 +1600,23 @@ MonoBehaviour:
     m_VarianceClampScale: 0.9
     m_ContrastAdaptiveSharpening: 0
   m_Version: 2
+--- !u!114 &963194230
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 963194225}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a1b2c3d4e5f60718293a4b5c6d7e8f08, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _target: {fileID: 61000002}
+  _followOffset: {x: 0, y: 18, z: -14}
+  _followSmoothTime: 0.25
+  _lookOffset: {x: 0, y: 0.5, z: 2}
+  _lookSmoothSpeed: 10
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -1607,3 +1625,4 @@ SceneRoots:
   - {fileID: 50000002}
   - {fileID: 705507995}
   - {fileID: 963194228}
+
