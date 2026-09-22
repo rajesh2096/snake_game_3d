@@ -6,11 +6,12 @@ using TMPro;
 namespace SnakeGame3D.UI
 {
     /// <summary>
-    /// Manages the Settings UI panel (toggles, sliders, difficulty, reset, back).
+    /// Manages the Settings UI panel, sound/music/vibration toggles, difficulty selection, and volume sliders.
+    /// Supports dynamic discovery and automatic listener binding.
     /// </summary>
     public class SettingsUI : MonoBehaviour
     {
-        [Header("Settings Panel Root")]
+        [Header("Panel Root")]
         [SerializeField] private GameObject _settingsPanel;
 
         [Header("Toggles & Buttons")]
@@ -52,30 +53,178 @@ namespace SnakeGame3D.UI
 
         private void Awake()
         {
+            ResolveReferences();
             BindListeners();
         }
 
         private void OnEnable()
         {
+            ResolveReferences();
+            BindListeners();
             RefreshUI();
+        }
+
+        private void OnDisable()
+        {
+            UnbindListeners();
+        }
+
+        public void ResolveReferences()
+        {
+            if (_settingsPanel == null)
+            {
+                _settingsPanel = gameObject;
+            }
+
+            if (_soundToggleButton == null) _soundToggleButton = FindButtonByName("SoundToggle");
+            if (_soundToggleText == null && _soundToggleButton != null) _soundToggleText = _soundToggleButton.GetComponentInChildren<TextMeshProUGUI>(true);
+
+            if (_musicToggleButton == null) _musicToggleButton = FindButtonByName("MusicToggle");
+            if (_musicToggleText == null && _musicToggleButton != null) _musicToggleText = _musicToggleButton.GetComponentInChildren<TextMeshProUGUI>(true);
+
+            if (_vibrationToggleButton == null) _vibrationToggleButton = FindButtonByName("VibrationToggle");
+            if (_vibrationToggleText == null && _vibrationToggleButton != null) _vibrationToggleText = _vibrationToggleButton.GetComponentInChildren<TextMeshProUGUI>(true);
+
+            if (_easyButton == null) _easyButton = FindButtonByName("EasyButton");
+            if (_normalButton == null) _normalButton = FindButtonByName("NormalButton");
+            if (_hardButton == null) _hardButton = FindButtonByName("HardButton");
+
+            if (_difficultyLabelText == null)
+            {
+                var texts = GetComponentsInChildren<TextMeshProUGUI>(true);
+                foreach (var t in texts)
+                {
+                    if (t.gameObject.name == "DifficultyLabel")
+                    {
+                        _difficultyLabelText = t;
+                        break;
+                    }
+                }
+            }
+
+            if (_soundVolumeSlider == null)
+            {
+                var sliders = GetComponentsInChildren<Slider>(true);
+                foreach (var s in sliders)
+                {
+                    if (s.gameObject.name == "SoundVolumeSlider")
+                    {
+                        _soundVolumeSlider = s;
+                        break;
+                    }
+                }
+            }
+
+            if (_musicVolumeSlider == null)
+            {
+                var sliders = GetComponentsInChildren<Slider>(true);
+                foreach (var s in sliders)
+                {
+                    if (s.gameObject.name == "MusicVolumeSlider")
+                    {
+                        _musicVolumeSlider = s;
+                        break;
+                    }
+                }
+            }
+
+            if (_resetSettingsButton == null) _resetSettingsButton = FindButtonByName("ResetSettingsButton");
+            if (_resetBestScoreButton == null) _resetBestScoreButton = FindButtonByName("ResetBestScoreButton");
+            if (_backButton == null) _backButton = FindButtonByName("BackButton");
+        }
+
+        private Button FindButtonByName(string buttonName)
+        {
+            var buttons = GetComponentsInChildren<Button>(true);
+            foreach (var btn in buttons)
+            {
+                if (btn.gameObject.name == buttonName)
+                {
+                    return btn;
+                }
+            }
+            return null;
         }
 
         private void BindListeners()
         {
-            if (_soundToggleButton != null) _soundToggleButton.onClick.AddListener(OnSoundToggleClicked);
-            if (_musicToggleButton != null) _musicToggleButton.onClick.AddListener(OnMusicToggleClicked);
-            if (_vibrationToggleButton != null) _vibrationToggleButton.onClick.AddListener(OnVibrationToggleClicked);
+            if (_soundToggleButton != null)
+            {
+                _soundToggleButton.onClick.RemoveListener(OnSoundToggleClicked);
+                _soundToggleButton.onClick.AddListener(OnSoundToggleClicked);
+            }
 
-            if (_easyButton != null) _easyButton.onClick.AddListener(() => OnDifficultyClicked(GameDifficulty.Easy));
-            if (_normalButton != null) _normalButton.onClick.AddListener(() => OnDifficultyClicked(GameDifficulty.Normal));
-            if (_hardButton != null) _hardButton.onClick.AddListener(() => OnDifficultyClicked(GameDifficulty.Hard));
+            if (_musicToggleButton != null)
+            {
+                _musicToggleButton.onClick.RemoveListener(OnMusicToggleClicked);
+                _musicToggleButton.onClick.AddListener(OnMusicToggleClicked);
+            }
 
-            if (_soundVolumeSlider != null) _soundVolumeSlider.onValueChanged.AddListener(OnSoundVolumeChanged);
-            if (_musicVolumeSlider != null) _musicVolumeSlider.onValueChanged.AddListener(OnMusicVolumeChanged);
+            if (_vibrationToggleButton != null)
+            {
+                _vibrationToggleButton.onClick.RemoveListener(OnVibrationToggleClicked);
+                _vibrationToggleButton.onClick.AddListener(OnVibrationToggleClicked);
+            }
 
-            if (_resetSettingsButton != null) _resetSettingsButton.onClick.AddListener(OnResetSettingsClicked);
-            if (_resetBestScoreButton != null) _resetBestScoreButton.onClick.AddListener(OnResetBestScoreClicked);
-            if (_backButton != null) _backButton.onClick.AddListener(OnBackClicked);
+            if (_easyButton != null)
+            {
+                _easyButton.onClick.RemoveAllListeners();
+                _easyButton.onClick.AddListener(() => OnDifficultyClicked(GameDifficulty.Easy));
+            }
+
+            if (_normalButton != null)
+            {
+                _normalButton.onClick.RemoveAllListeners();
+                _normalButton.onClick.AddListener(() => OnDifficultyClicked(GameDifficulty.Normal));
+            }
+
+            if (_hardButton != null)
+            {
+                _hardButton.onClick.RemoveAllListeners();
+                _hardButton.onClick.AddListener(() => OnDifficultyClicked(GameDifficulty.Hard));
+            }
+
+            if (_soundVolumeSlider != null)
+            {
+                _soundVolumeSlider.onValueChanged.RemoveListener(OnSoundVolumeChanged);
+                _soundVolumeSlider.onValueChanged.AddListener(OnSoundVolumeChanged);
+            }
+
+            if (_musicVolumeSlider != null)
+            {
+                _musicVolumeSlider.onValueChanged.RemoveListener(OnMusicVolumeChanged);
+                _musicVolumeSlider.onValueChanged.AddListener(OnMusicVolumeChanged);
+            }
+
+            if (_resetSettingsButton != null)
+            {
+                _resetSettingsButton.onClick.RemoveListener(OnResetSettingsClicked);
+                _resetSettingsButton.onClick.AddListener(OnResetSettingsClicked);
+            }
+
+            if (_resetBestScoreButton != null)
+            {
+                _resetBestScoreButton.onClick.RemoveListener(OnResetBestScoreClicked);
+                _resetBestScoreButton.onClick.AddListener(OnResetBestScoreClicked);
+            }
+
+            if (_backButton != null)
+            {
+                _backButton.onClick.RemoveListener(OnBackClicked);
+                _backButton.onClick.AddListener(OnBackClicked);
+            }
+        }
+
+        private void UnbindListeners()
+        {
+            if (_soundToggleButton != null) _soundToggleButton.onClick.RemoveListener(OnSoundToggleClicked);
+            if (_musicToggleButton != null) _musicToggleButton.onClick.RemoveListener(OnMusicToggleClicked);
+            if (_vibrationToggleButton != null) _vibrationToggleButton.onClick.RemoveListener(OnVibrationToggleClicked);
+            if (_soundVolumeSlider != null) _soundVolumeSlider.onValueChanged.RemoveListener(OnSoundVolumeChanged);
+            if (_musicVolumeSlider != null) _musicVolumeSlider.onValueChanged.RemoveListener(OnMusicVolumeChanged);
+            if (_resetSettingsButton != null) _resetSettingsButton.onClick.RemoveListener(OnResetSettingsClicked);
+            if (_resetBestScoreButton != null) _resetBestScoreButton.onClick.RemoveListener(OnResetBestScoreClicked);
+            if (_backButton != null) _backButton.onClick.RemoveListener(OnBackClicked);
         }
 
         public void RefreshUI()
