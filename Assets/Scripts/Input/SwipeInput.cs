@@ -1,13 +1,17 @@
-﻿using System;
+using System;
 using UnityEngine;
+using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.EnhancedTouch;
+using Touch = UnityEngine.InputSystem.EnhancedTouch.Touch;
+using TouchPhase = UnityEngine.InputSystem.TouchPhase;
 
 namespace SnakeGame3D.InputSystem
 {
     /// <summary>
-    /// Lightweight touch and mouse swipe detection component.
+    /// Touch, mouse, and keyboard swipe detection component powered by the New Input System.
     /// Detects touch begin, records start position, calculates delta on release,
     /// determines dominant axis, and raises a swipe event with a cardinal 3D world direction.
-    /// Also supports optional keyboard input in Editor for testing.
+    /// Fully compliant with activeInputHandler: 1 (New Input System only).
     /// </summary>
     public class SwipeInput : MonoBehaviour
     {
@@ -15,12 +19,19 @@ namespace SnakeGame3D.InputSystem
         [Tooltip("Minimum swipe distance in screen pixels to register as a swipe")]
         [SerializeField] private float _minSwipeDistance = 50f;
 
-        [Header("Editor Testing")]
-        [Tooltip("Enable WASD / Arrow keys input in Unity Editor")]
-        [SerializeField] private bool _enableKeyboardInEditor = true;
+        [Header("Editor / Desktop Testing")]
+        [Tooltip("Enable WASD / Arrow keys input in Unity Editor and Desktop")]
+        [SerializeField] private bool _enableKeyboard = true;
+
+        [Tooltip("Enable mouse drag swipe simulation for Editor and Desktop")]
+        [SerializeField] private bool _enableMouseSimulation = true;
 
         private Vector2 _touchStartPosition;
         private bool _isSwiping;
+        private int _activeTouchFingerId = -1;
+
+        private Vector2 _mouseStartPosition;
+        private bool _isMouseSwiping;
 
         /// <summary>
         /// Event fired when a valid swipe or directional input is recognized.
@@ -34,64 +45,142 @@ namespace SnakeGame3D.InputSystem
             set => _minSwipeDistance = Mathf.Max(10f, value);
         }
 
+        private void OnEnable()
+        {
+            EnhancedTouchSupport.Enable();
+        }
+
+        private void OnDisable()
+        {
+            EnhancedTouchSupport.Disable();
+            _isSwiping = false;
+            _isMouseSwiping = false;
+            _activeTouchFingerId = -1;
+        }
+
         private void Update()
         {
-            HandleTouchInput();
-            HandleMouseSwipe();
-            HandleKeyboardInput();
+            HandleEnhancedTouchInput();
+            HandleNewInputSystemMouse();
+            HandleNewInputSystemKeyboard();
         }
 
         /// <summary>
-        /// Native mobile touch input detection.
+        /// Touch input detection using New Input System EnhancedTouch.
         /// </summary>
-        private void HandleTouchInput()
+        private void HandleEnhancedTouchInput()
         {
-            if (Input.touchCount == 0) return;
+            var touches = Touch.activeTouches;
+            if (touches.Count == 0)
+            {
+                if (_isSwiping)
+                {
+                    _isSwiping = false;
+                    _activeTouchFingerId = -1;
+                }
+                return;
+            }
 
-            Touch touch = Input.GetTouch(0);
+            // Track the primary active touch finger
+            Touch primaryTouch = default;
+            bool foundPrimary = false;
 
-            switch (touch.phase)
+            if (_activeTouchFingerId != -1)
+            {
+                for (int i = 0; i < touches.Count; i++)
+                {
+                    if (touches[i].finger.index == _activeTouchFingerId)
+                    {
+                        primaryTouch = touches[i];
+                        foundPrimary = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!foundPrimary)
+            {
+                primaryTouch = touches[0];
+            }
+
+            switch (primaryTouch.phase)
             {
                 case TouchPhase.Began:
-                    _touchStartPosition = touch.position;
+                    _touchStartPosition = primaryTouch.screenPosition;
                     _isSwiping = true;
+                    _activeTouchFingerId = primaryTouch.finger.index;
                     break;
 
                 case TouchPhase.Ended:
-                    if (_isSwiping)
+                    if (_isSwiping && primaryTouch.finger.index == _activeTouchFingerId)
                     {
-                        ProcessSwipe(touch.position - _touchStartPosition);
+                        Vector2 delta = primaryTouch.screenPosition - _touchStartPosition;
+                        ProcessSwipe(delta);
                         _isSwiping = false;
+                        _activeTouchFingerId = -1;
                     }
                     break;
 
                 case TouchPhase.Canceled:
                     _isSwiping = false;
+                    _activeTouchFingerId = -1;
                     break;
             }
         }
 
         /// <summary>
-        /// Mouse click-and-drag swipe simulation for Editor & desktop testing.
+        /// Mouse click-and-drag swipe simulation using New Input System Mouse.current.
         /// </summary>
-        private void HandleMouseSwipe()
+        private void HandleNewInputSystemMouse()
         {
-            // If native touches exist, let touch handling take precedence
-            if (Input.touchCount > 0) return;
+            if (!_enableMouseSimulation) return;
+            if (Touch.activeTouches.Count > 0) return; // Touch takes priority
 
-            if (Input.GetMouseButtonDown(0))
+            var mouse = Mouse.current;
+            if (mouse == null) return;
+
+            if (mouse.leftButton.wasPressedThisFrame)
             {
-                _touchStartPosition = Input.mousePosition;
-                _isSwiping = true;
+                _mouseStartPosition = mouse.position.ReadValue();
+                _isMouseSwiping = true;
             }
-            else if (Input.GetMouseButtonUp(0))
+            else if (mouse.leftButton.wasReleasedThisFrame)
             {
-                if (_isSwiping)
+                if (_isMouseSwiping)
                 {
-                    Vector2 delta = (Vector2)Input.mousePosition - _touchStartPosition;
+                    Vector2 currentPos = mouse.position.ReadValue();
+                    Vector2 delta = currentPos - _mouseStartPosition;
                     ProcessSwipe(delta);
-                    _isSwiping = false;
+                    _isMouseSwiping = false;
                 }
+            }
+        }
+
+        /// <summary>
+        /// Keyboard directional input using New Input System Keyboard.current (W/A/S/D and Arrow keys).
+        /// </summary>
+        private void HandleNewInputSystemKeyboard()
+        {
+            if (!_enableKeyboard) return;
+
+            var keyboard = Keyboard.current;
+            if (keyboard == null) return;
+
+            if (keyboard.wKey.wasPressedThisFrame || keyboard.upArrowKey.wasPressedThisFrame)
+            {
+                OnDirectionRequested?.Invoke(Vector3.forward);
+            }
+            else if (keyboard.sKey.wasPressedThisFrame || keyboard.downArrowKey.wasPressedThisFrame)
+            {
+                OnDirectionRequested?.Invoke(Vector3.back);
+            }
+            else if (keyboard.aKey.wasPressedThisFrame || keyboard.leftArrowKey.wasPressedThisFrame)
+            {
+                OnDirectionRequested?.Invoke(Vector3.left);
+            }
+            else if (keyboard.dKey.wasPressedThisFrame || keyboard.rightArrowKey.wasPressedThisFrame)
+            {
+                OnDirectionRequested?.Invoke(Vector3.right);
             }
         }
 
@@ -120,31 +209,6 @@ namespace SnakeGame3D.InputSystem
             }
 
             OnDirectionRequested?.Invoke(requestedDirection);
-        }
-
-        /// <summary>
-        /// Editor keyboard testing fallback (W/A/S/D and Arrow keys).
-        /// </summary>
-        private void HandleKeyboardInput()
-        {
-            if (!_enableKeyboardInEditor && !Application.isEditor) return;
-
-            if (Input.GetKeyDown(KeyCode.W) || Input.GetKeyDown(KeyCode.UpArrow))
-            {
-                OnDirectionRequested?.Invoke(Vector3.forward);
-            }
-            else if (Input.GetKeyDown(KeyCode.S) || Input.GetKeyDown(KeyCode.DownArrow))
-            {
-                OnDirectionRequested?.Invoke(Vector3.back);
-            }
-            else if (Input.GetKeyDown(KeyCode.A) || Input.GetKeyDown(KeyCode.LeftArrow))
-            {
-                OnDirectionRequested?.Invoke(Vector3.left);
-            }
-            else if (Input.GetKeyDown(KeyCode.D) || Input.GetKeyDown(KeyCode.RightArrow))
-            {
-                OnDirectionRequested?.Invoke(Vector3.right);
-            }
         }
     }
 }
