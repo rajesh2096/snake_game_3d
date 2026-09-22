@@ -7,16 +7,27 @@ namespace SnakeGame3D.UI
     /// <summary>
     /// Displays the live gameplay score HUD.
     /// Listens to ScoreManager.OnScoreChanged events and updates the TextMeshProUGUI element.
+    /// Listens to GameOverManager.OnGameOver and GameStartManager events to cleanly hide during Game Over
+    /// and reappear when gameplay is ready/started.
     /// </summary>
     public class ScoreHUD : MonoBehaviour
     {
-        [Header("Manager Reference")]
+        [Header("Manager References")]
         [Tooltip("Reference to the ScoreManager")]
         [SerializeField] private ScoreManager _scoreManager;
+
+        [Tooltip("Reference to the GameOverManager")]
+        [SerializeField] private GameOverManager _gameOverManager;
+
+        [Tooltip("Reference to the GameStartManager")]
+        [SerializeField] private GameStartManager _startManager;
 
         [Header("UI Elements")]
         [Tooltip("Score text component")]
         [SerializeField] private TextMeshProUGUI _scoreText;
+
+        [Tooltip("Optional root GameObject for HUD visibility toggling")]
+        [SerializeField] private GameObject _hudRoot;
 
         [Header("Configuration")]
         [Tooltip("Format string for the score display")]
@@ -42,6 +53,31 @@ namespace SnakeGame3D.UI
             }
         }
 
+        public GameOverManager GameOverManager
+        {
+            get => _gameOverManager;
+            set
+            {
+                if (_gameOverManager != null)
+                {
+                    _gameOverManager.OnGameOver -= HandleGameOver;
+                }
+
+                _gameOverManager = value;
+
+                if (_gameOverManager != null && isActiveAndEnabled)
+                {
+                    _gameOverManager.OnGameOver += HandleGameOver;
+                }
+            }
+        }
+
+        public GameStartManager StartManager
+        {
+            get => _startManager;
+            set => _startManager = value;
+        }
+
         public TextMeshProUGUI ScoreText
         {
             get => _scoreText;
@@ -50,6 +86,12 @@ namespace SnakeGame3D.UI
                 _scoreText = value;
                 UpdateScoreDisplay();
             }
+        }
+
+        public GameObject HUDRoot
+        {
+            get => _hudRoot;
+            set => _hudRoot = value;
         }
 
         public string ScoreFormat
@@ -64,26 +106,63 @@ namespace SnakeGame3D.UI
 
         private void Awake()
         {
+            ResolveReferences();
+        }
+
+        public void ResolveReferences()
+        {
             if (_scoreManager == null)
             {
                 _scoreManager = FindAnyObjectByType<ScoreManager>();
             }
 
+            if (_gameOverManager == null)
+            {
+                _gameOverManager = FindAnyObjectByType<GameOverManager>();
+            }
+
+            if (_startManager == null)
+            {
+                _startManager = FindAnyObjectByType<GameStartManager>();
+            }
+
             if (_scoreText == null)
             {
-                _scoreText = GetComponentInChildren<TextMeshProUGUI>();
+                _scoreText = GetComponentInChildren<TextMeshProUGUI>(true);
+            }
+
+            if (_hudRoot == null)
+            {
+                _hudRoot = gameObject;
             }
         }
 
         private void OnEnable()
         {
+            ResolveReferences();
+
             if (_scoreManager != null)
             {
                 _scoreManager.OnScoreChanged -= HandleScoreChanged;
                 _scoreManager.OnScoreChanged += HandleScoreChanged;
             }
 
-            UpdateScoreDisplay();
+            if (_gameOverManager != null)
+            {
+                _gameOverManager.OnGameOver -= HandleGameOver;
+                _gameOverManager.OnGameOver += HandleGameOver;
+            }
+
+            // If game is already over when enabled, keep hidden; otherwise show
+            if (_gameOverManager != null && _gameOverManager.IsGameOver)
+            {
+                SetHUDVisibility(false);
+            }
+            else
+            {
+                SetHUDVisibility(true);
+                UpdateScoreDisplay();
+            }
         }
 
         private void OnDisable()
@@ -91,6 +170,11 @@ namespace SnakeGame3D.UI
             if (_scoreManager != null)
             {
                 _scoreManager.OnScoreChanged -= HandleScoreChanged;
+            }
+
+            if (_gameOverManager != null)
+            {
+                _gameOverManager.OnGameOver -= HandleGameOver;
             }
         }
 
@@ -100,6 +184,29 @@ namespace SnakeGame3D.UI
         private void HandleScoreChanged(int score)
         {
             UpdateScoreText(score);
+        }
+
+        /// <summary>
+        /// Handles Game Over by hiding the live score HUD.
+        /// </summary>
+        private void HandleGameOver()
+        {
+            SetHUDVisibility(false);
+        }
+
+        /// <summary>
+        /// Controls HUD visibility cleanly without destroying components.
+        /// </summary>
+        public void SetHUDVisibility(bool isVisible)
+        {
+            if (_hudRoot != null)
+            {
+                _hudRoot.SetActive(isVisible);
+            }
+            else if (_scoreText != null)
+            {
+                _scoreText.gameObject.SetActive(isVisible);
+            }
         }
 
         /// <summary>

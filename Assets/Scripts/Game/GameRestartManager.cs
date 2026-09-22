@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using SnakeGame3D.Snake;
 using SnakeGame3D.Gameplay;
 using SnakeGame3D.FoodSystem;
@@ -9,7 +9,7 @@ namespace SnakeGame3D.Game
 {
     /// <summary>
     /// Coordinates the restart flow for the 3D Snake Game.
-    /// Resets GameOverManager, GamePauseManager, GameStartManager, ScoreManager, SnakeController, ArenaBoundary, SnakeSelfCollision, Food, FoodSpawner, GameOverUI, PauseUI, GameStartUI, and BackgroundMusicManager
+    /// Resets GameOverManager, GamePauseManager, GameStartManager, ScoreManager, SnakeController, ArenaBoundary, SnakeSelfCollision, Food, FoodSpawner, GameOverUI, PauseUI, GameStartUI, ScoreHUD, and BackgroundMusicManager
     /// in a deterministic sequence without reloading the scene.
     /// </summary>
     public class GameRestartManager : MonoBehaviour
@@ -51,6 +51,9 @@ namespace SnakeGame3D.Game
         [Tooltip("Reference to GameStartUI")]
         [SerializeField] private GameStartUI _startUI;
 
+        [Tooltip("Reference to ScoreHUD")]
+        [SerializeField] private ScoreHUD _scoreHUD;
+
         [Tooltip("Reference to BackgroundMusicManager")]
         [SerializeField] private BackgroundMusicManager _musicManager;
 
@@ -66,6 +69,7 @@ namespace SnakeGame3D.Game
         public GameOverUI GameOverUI { get => _gameOverUI; set => _gameOverUI = value; }
         public PauseUI PauseUI { get => _pauseUI; set => _pauseUI = value; }
         public GameStartUI StartUI { get => _startUI; set => _startUI = value; }
+        public ScoreHUD ScoreHUD { get => _scoreHUD; set => _scoreHUD = value; }
         public BackgroundMusicManager MusicManager { get => _musicManager; set => _musicManager = value; }
 
         private void Awake()
@@ -90,6 +94,7 @@ namespace SnakeGame3D.Game
             if (_gameOverUI == null) _gameOverUI = FindAnyObjectByType<GameOverUI>();
             if (_pauseUI == null) _pauseUI = FindAnyObjectByType<PauseUI>();
             if (_startUI == null) _startUI = FindAnyObjectByType<GameStartUI>();
+            if (_scoreHUD == null) _scoreHUD = FindAnyObjectByType<ScoreHUD>();
             if (_musicManager == null) _musicManager = FindAnyObjectByType<BackgroundMusicManager>();
         }
 
@@ -104,7 +109,7 @@ namespace SnakeGame3D.Game
         /// 7. Resets ArenaBoundary state
         /// 8. Resets SnakeSelfCollision state
         /// 9. Resets Food and FoodSpawner state
-        /// 10. Hides Game Over UI panel, updates Pause UI & shows Start/Ready UI
+        /// 10. Hides Game Over UI panel, updates Pause UI, shows Start/Ready UI, restores ScoreHUD
         /// </summary>
         public void RestartGame()
         {
@@ -174,6 +179,12 @@ namespace SnakeGame3D.Game
             if (_gameOverUI != null)
             {
                 _gameOverUI.HidePanel();
+            }
+
+            if (_scoreHUD != null)
+            {
+                _scoreHUD.SetHUDVisibility(true);
+                _scoreHUD.UpdateScoreDisplay();
             }
 
             if (_startUI != null)
