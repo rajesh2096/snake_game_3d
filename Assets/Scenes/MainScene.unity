@@ -3854,6 +3854,7 @@ GameObject:
   - component: {fileID: 1607370854}
   - component: {fileID: 1607370855}
   - component: {fileID: 1607370856}
+  - component: {fileID: 1607370857}
   m_Layer: 0
   m_Name: Canvas
   m_TagString: Untagged
@@ -4040,6 +4041,23 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SnakeGame3D.Game.BestScoreManager
   _bestScore: 0
+--- !u!114 &1607370857
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1607370847}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cdae40d50ad09ab4d81c03a3c0c3df63, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SnakeGame3D.Game.GameDifficultyManager
+  _easySpeed: 2.25
+  _normalSpeed: 3
+  _hardSpeed: 3.75
+  _currentDifficulty: 1
+  _snakeController: {fileID: 0}
 --- !u!1 &1655620479
 GameObject:
   m_ObjectHideFlags: 0
