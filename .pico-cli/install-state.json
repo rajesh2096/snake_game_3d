@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "installedAt": "2026-09-23T06:27:14.444Z",
+  "repo": "https://github.com/Pico-Developer/PICO-Unity-SDK-Skills.git",
+  "pluginType": "unity",
+  "pluginPackage": ".",
+  "selectedVersion": "main",
+  "resolvedRevision": "main",
+  "resolvedCommit": "63d6d3dea3cc8bac40a0c713d774d4ca8b668288",
+  "targetProject": "c:\\Users\\Admin\\Downloads\\Snake Game 3D\\SnakeGame3D",
+  "installedPaths": [
+    ".trae/skills/develop-pico-unity-apps",
+    ".trae/skills/pico-unity-buildingblocks",
+    ".trae/skills/pico-unity-init",
+    ".trae/skills/pico-unity-package-manager"
+  ],
+  "installedItems": [
+    {
+      "type": "skill",
+      "name": "develop-pico-unity-apps",
+      "path": ".trae/skills/develop-pico-unity-apps"
+    },
+    {
+      "type": "skill",
+      "name": "pico-unity-buildingblocks",
+      "path": ".trae/skills/pico-unity-buildingblocks"
+    },
+    {
+      "type": "skill",
+      "name": "pico-unity-init",
+      "path": ".trae/skills/pico-unity-init"
+    },
+    {
+      "type": "skill",
+      "name": "pico-unity-package-manager",
+      "path": ".trae/skills/pico-unity-package-manager"
+    }
+  ],
+  "globalMcpServers": [
+    "unity-mcp"
+  ],
+  "agentsMdMode": "not-provided",
+  "agentsMdPaths": [],
+  "extensionVersion": "1.0.4",
+  "platform": "unity"
+}
